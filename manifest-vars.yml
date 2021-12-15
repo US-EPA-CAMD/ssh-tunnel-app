@@ -1,0 +1,10 @@
+#THIS FILE SHOULD CONTAIN DEV SETTINGS AND CI/CD WORKFLOW WILL CHANGE SETTINGS BASED ON ENV
+name: ssh-tunnel
+title: SSH Tunnel Application
+path: ssh-tunnel
+port: 8080
+instances: 1
+memory: 64M
+environment: development
+host: api-easey-dev.app.cloud.gov
+apiHost: api.epa.gov/easey/dev

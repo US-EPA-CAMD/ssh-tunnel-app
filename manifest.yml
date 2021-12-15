@@ -1,0 +1,18 @@
+applications:
+  - name: ((name))
+    memory: ((memory))
+    instances: ((instances))
+    buildpacks:
+      - nodejs_buildpack
+    env:
+      OPTIMIZE_MEMORY: true
+      EASEY_API_GATEWAY_HOST: ((apiHost))
+      EASEY_SSH_TUNNEL_APP_TITLE: ((title))
+      EASEY_SSH_TUNNEL_APP_HOST: ((host))
+      EASEY_SSH_TUNNEL_APP_PORT: ((port))
+      EASEY_SSH_TUNNEL_APP_PATH: ((path))
+      EASEY_SSH_TUNNEL_APP_ENV: ((environment))
+    routes:
+      - route: ((host))/((path))
+    services:
+      - camd-pg-db

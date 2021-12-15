@@ -2,8 +2,11 @@
 [![GitHub](https://img.shields.io/github/license/US-EPA-CAMD/ssh-tunnel-app)](https://github.com/US-EPA-CAMD/ssh-tunnel-app/blob/develop/LICENSE.md)
 [![Develop Branch Pipeline](https://github.com/US-EPA-CAMD/ssh-tunnel-app/workflows/Develop%20Branch%20Workflow/badge.svg)](https://github.com/US-EPA-CAMD/ssh-tunnel-app/actions)<br>
 
+SSH tunnel application for cloud.gov database connections. Dummy application bound to database services that provide a dedicated connection to the EASEY Database.
+
 ## Built With
 [NestJS](https://nestjs.com/) - server-side Node.js framework
+
 [Cloud.gov](https://cloud.gov/) - Platform as a Service (PaaS)
 
 ## License & Contributing
