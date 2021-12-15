@@ -1,0 +1,4 @@
+instances: 1
+environment: cdc
+host: api-easey-cdc.app.cloud.gov
+apiHost: api.epa.gov/easey/cdc
