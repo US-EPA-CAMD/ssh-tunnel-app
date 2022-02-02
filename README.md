@@ -1,7 +1,9 @@
-# SSH Tunnel Application
 [![GitHub](https://img.shields.io/github/license/US-EPA-CAMD/ssh-tunnel-app)](https://github.com/US-EPA-CAMD/ssh-tunnel-app/blob/develop/LICENSE.md)
-[![Develop Branch Pipeline](https://github.com/US-EPA-CAMD/ssh-tunnel-app/workflows/Develop%20Branch%20Workflow/badge.svg)](https://github.com/US-EPA-CAMD/ssh-tunnel-app/actions)<br>
+[![Develop CI/CD](https://github.com/US-EPA-CAMD/ssh-tunnel-app/workflows/Develop%20Branch%20Workflow/badge.svg)](https://github.com/US-EPA-CAMD/ssh-tunnel-app/actions)
+[![Release CI/CD](https://github.com/US-EPA-CAMD/ssh-tunnel-app/workflows/Release%20Branch%20Workflow/badge.svg)](https://github.com/US-EPA-CAMD/ssh-tunnel-app/actions)
+<br>
 
+# `SSH Tunnel Application`
 SSH tunnel application for cloud.gov database connections. Dummy application bound to database services that provide a dedicated connection to the EASEY Database.
 
 ## Built With
