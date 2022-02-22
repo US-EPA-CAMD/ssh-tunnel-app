@@ -1,6 +1,7 @@
 applications:
   - name: ((name))
-    memory: ((memory))
+    memory: ((memory))M
+    disk_quota: ((disk))M
     instances: ((instances))
     buildpacks:
       - nodejs_buildpack
@@ -12,6 +13,10 @@ applications:
       EASEY_SSH_TUNNEL_APP_PORT: ((port))
       EASEY_SSH_TUNNEL_APP_PATH: ((path))
       EASEY_SSH_TUNNEL_APP_ENV: ((environment))
+      EASEY_SSH_TUNNEL_APP_ENABLE_CORS: true
+      EASEY_SSH_TUNNEL_APP_ENABLE_API_KEY: true
+      EASEY_SSH_TUNNEL_APP_ENABLE_AUTH_TOKEN: false
+      EASEY_SSH_TUNNEL_APP_ENABLE_GLOBAL_VALIDATION_PIPE: true
     routes:
       - route: ((host))/((path))
     services:
