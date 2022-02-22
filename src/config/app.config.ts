@@ -1,8 +1,10 @@
+require('dotenv').config();
 import { registerAs } from '@nestjs/config';
+import { parseBool } from '@us-epa-camd/easey-common/utilities';
 
 const path = process.env.EASEY_SSH_TUNNEL_APP_PATH || 'ssh-tunnel';
 const host = process.env.EASEY_SSH_TUNNEL_APP_HOST || 'localhost';
-const port = process.env.EASEY_SSH_TUNNEL_APP_PORT || 9000;
+const port = +process.env.EASEY_SSH_TUNNEL_APP_PORT || 9000;
 
 let uri = `https://${host}/${path}`;
 
@@ -19,10 +21,18 @@ export default registerAs('app', () => ({
   port,
   uri,
   env: process.env.EASEY_SSH_TUNNEL_APP_ENV || 'local-dev',
-  enableCors: process.env.EASEY_SSH_TUNNEL_APP_ENABLE_CORS || false,
-  enableApiKey: process.env.EASEY_SSH_TUNNEL_APP_ENABLE_API_KEY || false,
-  enableAuthToken: process.env.EASEY_SSH_TUNNEL_APP_ENABLE_AUTH_TOKEN || false,
-  enableGlobalValidationPipes: process.env.EASEY_SSH_TUNNEL_APP_ENABLE_GLOBAL_VALIDATION_PIPE || false,
+  enableCors: parseBool(process.env.EASEY_FACILITIES_API_ENABLE_CORS, true),
+  enableApiKey: parseBool(
+    process.env.EASEY_FACILITIES_API_ENABLE_API_KEY,
+    true,
+  ),
+  enableAuthToken: parseBool(
+    process.env.EASEY_FACILITIES_API_ENABLE_AUTH_TOKEN,
+  ),
+  enableGlobalValidationPipes: parseBool(
+    process.env.EASEY_FACILITIES_API_ENABLE_GLOBAL_VALIDATION_PIPE,
+    true,
+  ),
   version: process.env.EASEY_SSH_TUNNEL_APP_VERSION || 'v0.0.0',
   published: process.env.EASEY_SSH_TUNNEL_APP_PUBLISHED || 'local',
 }));
