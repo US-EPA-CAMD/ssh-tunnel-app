@@ -3,6 +3,12 @@ name: Release Branch Workflow
 on:
   push:
     branches: [ release/* ]
+  workflow_dispatch:
+    input:
+      env:
+        type: string
+        required: false
+        default: 'release'
 
 jobs:
   Build-Test-Package:
