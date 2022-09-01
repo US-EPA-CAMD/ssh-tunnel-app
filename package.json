@@ -1,6 +1,6 @@
 {
   "name": "ssh-tunnel-app",
-  "version": "1.0.0",
+  "version": "1.1",
   "description": "SSH tunnel application for cloud.gov database connections. Dummy application bound to database services that provide a dedicated connection to the EASEY Database.",
   "license": "MIT",
   "private": true,
