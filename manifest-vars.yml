@@ -3,9 +3,6 @@ name: ssh-tunnel
 title: SSH Tunnel Application
 path: ssh-tunnel
 port: 8080
-memory: 128
+memory: 64
 disk: 1024
 instances: 1
-environment: development
-host: api-easey-dev.app.cloud.gov
-apiHost: api.epa.gov/easey/dev
