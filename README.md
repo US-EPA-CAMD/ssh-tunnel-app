@@ -9,11 +9,7 @@
 
 ## Description
 
-SSH tunnel application for cloud.gov database connections. Dummy application bound to database services that provide a dedicated connection to the EASEY Database. The application leverages the [apt-buildpack](https://github.com/cloudfoundry/apt-buildpack) to incorporate PostgreSQL client tools within the app’s
-container. **Note that the apt-buildpack is considered experimental and is not supported by Cloud.gov. Using this in a production setting would require you to address the security controls.** This setup enables the execution of [Cloud Foundry Tasks](https://
-docs.cloudfoundry.org/devguide/using-tasks.html), allowing for the implementation of various PostgreSQL commands such as `pg_dump`, `pg_restore`, and
-`psql`. Importantly, each `aws-rds` service instance bound to the application manages its credentials automatically, eliminating the need to manually
-enter passwords when executing commands.
+SSH tunnel application for cloud.gov database connections. Dummy application bound to database services that provide a dedicated connection to the EASEY Database. The application leverages the [apt-buildpack](https://github.com/cloudfoundry/apt-buildpack) to incorporate PostgreSQL client tools within the app’s container. **Note that the apt-buildpack is considered experimental and is not supported by Cloud.gov. Using this in a production setting would require you to address the security controls.** This setup enables the execution of [Cloud Foundry Tasks](https://docs.cloudfoundry.org/devguide/using-tasks.html), allowing for the implementation of various PostgreSQL commands such as `pg_dump`, `pg_restore`, and `psql`. Importantly, each `aws-rds` service instance bound to the application manages its credentials automatically, eliminating the need to manually enter passwords when executing commands.
 
 ## Getting Started
 
