@@ -39,7 +39,7 @@ Modify the manifest.yml file or use the `cf` command line tool to bind the aws-r
 Run a task with the Cloud Foundry `run-task` command. The desired shell command to execute should be passed to the `--command` argument.
 
 ```bash
-cf run-task --command 'psql -c "\pset tuples_only on" -c "SELECT version()" -c "\pset tuples_only off" -h host -p port -U user'
+cf run-task ssh-tunnel --command 'psql <database> -c "\pset tuples_only on" -c "SELECT version()" -c "\pset tuples_only off" -h <host> -p <port> -U <user>'
 ```
 
 You can check the status of the task using the `cf tasks` command.
@@ -50,7 +50,7 @@ cf tasks ssh-tunnel
 Getting tasks for app ssh-tunnel in org my-org  / space my-space as user@name.com...
 
 id   name       state       start time                      command
-5    bfa9cef9   SUCCEEDED   Wed, 22 Mar 2023 21:07:56 UTC   psql -c "\pset tuples_only on" -c "select version()" -c "\pset tuples_only off" -h host -p port -U user
+5    bfa9cef9   SUCCEEDED   Wed, 22 Mar 2023 21:07:56 UTC   psql <database> -c "\pset tuples_only on" -c "select version()" -c "\pset tuples_only off" -h <host> -p <port> -U <user>
 ```
 
 You can view the logs for the running task using the `cf logs` command.
