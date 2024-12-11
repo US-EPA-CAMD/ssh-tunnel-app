@@ -12,11 +12,11 @@ if [ "$(jq -r 'has("aws-rds")' <<< "$VCAP_SERVICES")" == "true" ]; then
             echo "$item" | base64 --decode | jq -r ".credentials.${1}"
         }
 
-        host=$(_get_credential "HOST")
-        port=$(_get_credential "PORT")
-        database=$(_get_credential "DB_NAME")
-        username=$(_get_credential "USERNAME")
-        password=$(_get_credential "PASSWORD")
+        host=$(_get_credential "host")
+        port=$(_get_credential "port")
+        database=$(_get_credential "db_name")
+        username=$(_get_credential "username")
+        password=$(_get_credential "password")
 
         echo "${host}:${port}:${database}:${username}:${password}" >> "${HOME}/.pgpass"
     done
