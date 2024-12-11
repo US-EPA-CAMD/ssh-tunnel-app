@@ -1,7 +1,7 @@
 # Add the location of the postgresql client tools installed by apt to `PATH`.
 # If you don't add the direct path to the binaries, `pg_wrapper` will get involved and **not work**.
 # This is because `pg_wrapper` is installed in `/home/vcap/deps/0/apt/usr/lib/postgresql/13/bin` by apt-buildpack, but Ubuntu expects them to be in `/usr/lib/postgresql/15/bin`.
-export PATH="${HOME}/deps/0/apt/usr/lib/postgresql/15/bin:${PATH}"
+export PATH="/home/vcap/deps/0/apt/usr/lib/postgresql/15/bin:${PATH}"
 
 # Create a .pgpass file with the credentials from the VCAP_SERVICES environment variable.
 if [ "$(jq -r 'has("aws-rds")' <<< "$VCAP_SERVICES")" == "true" ]; then

@@ -1,5 +1,4 @@
 ---
-truncatesources: true
 cleancache: true
 keys:
   - https://www.postgresql.org/media/keys/ACCC4CF8.asc
