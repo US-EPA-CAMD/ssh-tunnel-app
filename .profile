@@ -20,4 +20,6 @@ if [ "$(jq -r 'has("aws-rds")' <<< "$VCAP_SERVICES")" == "true" ]; then
 
         echo "${host}:${port}:${database}:${username}:${password}" >> "${HOME}/.pgpass"
     done
+
+    chmod 600 "${HOME}/.pgpass"
 fi
