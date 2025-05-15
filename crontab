@@ -1,0 +1,1 @@
+0 * * * /home/vcap/app/public/scripts/backup-all.sh

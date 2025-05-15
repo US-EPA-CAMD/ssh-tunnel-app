@@ -23,3 +23,24 @@ if [ "$(jq -r 'has("aws-rds")' <<< "$VCAP_SERVICES")" == "true" ]; then
 
     chmod 600 "${HOME}/.pgpass"
 fi
+
+# Check if aws cli is installed and install if not found
+if ! command -v aws &> /dev/null
+then
+    echo "Installing the latest aws cli"
+
+    echo "Downloading the latest aws cli"
+
+    # Download the aws cli and redirect stderr to /dev/null
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" 2> /dev/null
+    unzip awscliv2.zip > /dev/null
+
+    # Install the aws cli and redirect the output to /dev/null
+    echo "Running the aws cli installer"
+    ./aws/install --install-dir ~/aws-cli --bin-dir ~/bin > /dev/null
+
+    # Remove installation files
+    echo "Removing installation files"
+    rm -rf awscliv2.zip aws
+fi
+

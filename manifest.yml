@@ -6,6 +6,12 @@ applications:
     buildpacks:
       - https://github.com/cloudfoundry/apt-buildpack
       - staticfile_buildpack
+    env:
+      CF_APP_NAME: ssh-tunnel
+      CF_S3_CONFIG: ((cfS3Config))
     no-route: true
     services:
       - camd-pg-db
+      #- backups # Must bind manually to specify `additional_buckets`
+      - mats-bulk-files-import
+    command: ./scripts/supercronic.sh 2>&1

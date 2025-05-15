@@ -6,3 +6,4 @@ port: 8080
 memory: 64
 disk: 1024
 instances: 1
+cfS3Config: '{"backup": "backups", "targets": ["test"]}'
