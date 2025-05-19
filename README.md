@@ -87,7 +87,7 @@ A `metadata.json` file listing the backed-up keys and timestamp is written into 
 
 ### Scheduling
 
-[Supercronic](https://github.com/aptible/supercronic) is used to run backups and pruning automatically based on the schedules defined in the `S3_BACKUP_TASK_CRON_EXPRESSION` & `S3_PRUNE_TASK_CRON_EXPRESSION` environment variables, respectively (default: daily at midnight). A typical schedule might look like this:
+[Supercronic](https://github.com/aptible/supercronic) is used to run backups and pruning automatically based on the schedules defined in the `EASEY_S3_BACKUP_TASK_CRON_EXPRESSION` & `EASEY_S3_PRUNE_TASK_CRON_EXPRESSION` environment variables, respectively (default: daily at midnight). A typical schedule might look like this:
 
 ```bash
 0 0 * * * /home/vcap/app/scripts/backup-all.sh

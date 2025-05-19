@@ -19,7 +19,7 @@ fi
 #cf_auth # Authenticate to cloud.gov # TODO: Uncomment when done testing locally
 validate_s3_service_binding "$CF_S3_BACKUPS_SERVICE_NAME" # Ensure the backup bucket is bound
 
-IFS=',' read -ra TARGET_SERVICES <<< "$CF_S3_TARGET_SERVICE_NAMES" # Comma-separated list of target services
+IFS=',' read -ra TARGET_SERVICES <<< "$CF_S3_BACKUP_TARGET_SERVICE_NAMES" # Comma-separated list of target services
 for target_service in "${TARGET_SERVICES[@]}"; do
     #cf run-task "$(get_app_name)" --name "backup-$target_service" --command "${SCRIPTS_DIR}/backup-bucket.sh $target_service $BACKUP_SERVICE" # TODO: Uncomment when done testing locally
 

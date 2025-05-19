@@ -8,8 +8,11 @@ applications:
       - staticfile_buildpack
     env:
       CF_S3_BACKUPS_SERVICE_NAME: backups
+      CF_S3_BACKUP_RETENTION_DAYS: 30
       CF_S3_BACKUP_TARGET_SERVICE_NAMES: mats-bulk-files-import
       CF_SERVICE_ACCOUNT_NAME: deployment-svc
+      EASEY_S3_BACKUP_TASK_CRON_EXPRESSION: 0 0 * * *
+      EASEY_S3_PRUNE_TASK_CRON_EXPRESSION: 0 0 * * *
     no-route: true
     services:
       - camd-pg-db
