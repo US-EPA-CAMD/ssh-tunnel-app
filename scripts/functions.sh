@@ -64,7 +64,7 @@ function aws_s3_prune {
         aws_global_flags+=('--quiet')
     fi
 
-    s3_flags=('--recursive' '--dryrun') # TODO: Remove --dryrun to actually delete
+    s3_flags=('--recursive')
     total_backups="${#backup_dirs[@]}"
     for ((i = 0; i < total_backups; i++)); do
         backup_date="${backup_dirs[$i]}"
