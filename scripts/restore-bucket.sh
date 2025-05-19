@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+resolve_script_path() {
+    local source="${BASH_SOURCE[0]}"
+    while [ -h "$source" ]; do
+        local directory
+        directory="$(cd -P "$(dirname "$source")" >/dev/null 2>&1 && pwd)"
+        source="$(readlink "$source")"
+        [[ "$source" != /* ]] && source="$directory/$source"
+    done
+    cd -P "$(dirname "$source")" >/dev/null 2>&1 && pwd
+}
+
 # Help section
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || $# -lt 2 ]]; then
     echo "Usage: $(basename "$0") <TARGET_SERVICE_NAME> <BACKUP_DATE>"
@@ -22,8 +33,8 @@ fi
 TARGET_SERVICE_NAME="$1"
 BACKUP_DATE="$2" # YYYY-MM-DD
 
-SCRIPTS_DIR="$(dirname "${BASH_SOURCE[0]}")"
 BACKUP_SERVICE_NAME="$CF_S3_BACKUPS_SERVICE_NAME"
+SCRIPTS_DIR="$(resolve_script_path)"
 
 # Check if the functions.sh file exists
 if [ ! -f "${SCRIPTS_DIR}/functions.sh" ]; then

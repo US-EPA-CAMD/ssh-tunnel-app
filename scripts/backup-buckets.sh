@@ -15,6 +15,7 @@ if [ ! -f "${SCRIPTS_DIR}/backup-bucket.sh" ]; then
     echo "backup-bucket.sh file not found"
     exit 2
 fi
+chmod +x "${SCRIPTS_DIR}/backup-bucket.sh" # Make the script executable
 
 cf_auth # Authenticate to cloud.gov
 validate_s3_service_binding "$CF_S3_BACKUPS_SERVICE_NAME" # Ensure the backup bucket is bound

@@ -32,6 +32,8 @@ for file in "${REQUIRED_FILES[@]}"; do
         echo "Required file $file not found"
         exit 2
     fi
+
+    chmod +x "$file" # Make the script executable
 done
 
 # Generate the crontab file

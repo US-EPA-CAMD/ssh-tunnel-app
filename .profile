@@ -43,3 +43,27 @@ then
     echo "Removing installation files"
     rm -rf awscliv2.zip aws
 fi
+
+# Add the custom bin directory to PATH
+BIN_DIR="${BIN_DIR:-/usr/local/bin}"
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/scripts" && pwd)" # Absolute path to the scripts directory
+
+export PATH="${BIN_DIR}:${PATH}"
+
+# Create symlinks for the standalone backup scripts to facilitate running them as tasks
+BACKUP_SCRIPTS=(
+    "backup-bucket.sh"
+    "prune-bucket.sh"
+    "restore-bucket.sh"
+)
+for script in "${BACKUP_SCRIPTS[@]}"; do
+    # Check if the script exists
+    if [ ! -f "${SCRIPTS_DIR}/${script}" ]; then
+        echo "Script ${script} not found in ${SCRIPTS_DIR}"
+        exit 2
+    fi
+
+    # Make the script executable and create a symlink in the bin directory
+    chmod +x "${SCRIPTS_DIR}/${script}"
+    ln -sf "${SCRIPTS_DIR}/${script}" "${BIN_DIR}/${script%.sh}"
+done

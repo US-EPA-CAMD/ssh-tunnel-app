@@ -106,19 +106,19 @@ You can also manually invoke S3 backup or restore operations using the provided 
 - **Backup a single bucket:**
 
   ```bash
-  cf run-task ssh-tunnel --command './scripts/backup-bucket.sh <target-service-name>'
+  cf run-task ssh-tunnel --command 'backup-bucket <target-service-name>'
   ```
 
 - **Prune a single bucket:**
 
   ```bash
-  cf run-task ssh-tunnel --command './scripts/prune-bucket.sh <target-service-name>'
+  cf run-task ssh-tunnel --command 'prune-bucket <target-service-name>'
   ```
 
 - **Restore from backup:**
 
   ```bash
-  cf run-task ssh-tunnel --command './scripts/restore-bucket.sh <target-service-name> <backup-date>'
+  cf run-task ssh-tunnel --command 'restore-bucket <target-service-name> <backup-date>'
   ```
 
 > [!note]

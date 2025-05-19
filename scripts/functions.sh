@@ -4,12 +4,12 @@ set -euo pipefail
 DEBUG="${DEBUG:-false}" # Set to true or 1 to enable debug logging
 
 function aws_s3_generate_metadata {
-    uri="$1"
-
-    metadata_file="/tmp/metadata.json"
+    local uri="$1"
 
     # Generate metadata file and stage it in /tmp
-    aws_global_flags=('--output' 'text' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    local aws_global_flags=('--output' 'text' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    local metadata_file="/tmp/metadata.json"
+
     # If DEBUG is set to true or 1, enable debug logging
     if [[ "$DEBUG" == "true" || "$DEBUG" == 1 ]]; then
         aws_global_flags+=('--debug')
@@ -36,19 +36,19 @@ function aws_s3_generate_metadata {
 }
 
 function aws_s3_prune {
-    uri="$1"
-    cutoff_date="$2"
+    local uri="$1"
+    local cutoff_date="$2"
 
-    service_name="$(basename "$uri")"
+    local aws_global_flags=('--output' 'text' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    local service_name; service_name="$(basename "$uri")"
 
-    aws_global_flags=('--output' 'text' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
     # If DEBUG is set to true or 1, enable debug logging
     if [[ "$DEBUG" == "true" || "$DEBUG" == 1 ]]; then
         aws_global_flags+=('--debug')
     fi
 
     # Get a sorted list of backup directories (dates), oldest to newest
-    backup_dirs=()
+    local backup_dirs=()
     while read -r dir; do
         backup_dirs+=("${dir%/}")  # Remove trailing slash
         done < <( \
@@ -64,8 +64,8 @@ function aws_s3_prune {
         aws_global_flags+=('--quiet')
     fi
 
-    s3_flags=('--recursive')
-    total_backups="${#backup_dirs[@]}"
+    local s3_flags=('--recursive')
+    local total_backups="${#backup_dirs[@]}"
     for ((i = 0; i < total_backups; i++)); do
         backup_date="${backup_dirs[$i]}"
         if [[ "$backup_date" < "$cutoff_date" ]]; then
@@ -84,11 +84,12 @@ function aws_s3_prune {
 }
 
 function aws_s3_sync {
-    source_uri="$1"
-    destination_uri="$2"
+    local source_uri="$1"
+    local destination_uri="$2"
 
-    aws_global_flags=('--output' 'json' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
-    s3_flags=('--exact-timestamps' '--delete')
+    local aws_global_flags=('--output' 'json' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    local s3_flags=('--exact-timestamps' '--delete')
+
     # If DEBUG is set to true or 1, enable debug logging
     if [[ "$DEBUG" == "true" || "$DEBUG" == 1 ]]; then
         aws_global_flags+=('--debug')
@@ -106,13 +107,13 @@ function aws_s3_sync {
 
 function cf_auth {
     _get_metadatum() {
-        key="$1"
+        local key="$1"
 
         jq -r --arg key "$key" '.[$key]' <<< "${VCAP_APPLICATION}"
     }
 
     _get_credential() {
-        credential_key="$1"
+        local credential_key="$1"
 
         get_credential 'cloud-gov-service-account' "$CF_SERVICE_ACCOUNT_NAME" "$credential_key"
     }
@@ -136,15 +137,15 @@ function get_app_name {
 }
 
 function get_bucket_id {
-    service_name="$1"
+    local service_name="$1"
 
     echo "$VCAP_SERVICES" | jq -r --arg name "$service_name" '.s3[] | select(.name == $name) | .credentials.bucket'
 }
 
 function get_credential {
-    service_type="$1"
-    service_name="$2"
-    credential_key="$3"
+    local service_type="$1"
+    local service_name="$2"
+    local credential_key="$3"
 
     jq -r --arg service_type "$service_type" \
         --arg credential_key "$credential_key" \
@@ -155,13 +156,13 @@ function get_credential {
 
 # Function to get AWS S3 credentials from VCAP_SERVICES
 function _set_aws_s3_credentials {
-    s3_service_name=$1
-    service_type=$2
+    local s3_service_name=$1
+    local service_type=$2
 
     echo "Setting credentials for $service_type service \"${s3_service_name}\""
 
     _get_credential() {
-        credential_key="$1"
+        local credential_key="$1"
 
         get_credential "$service_type" "$s3_service_name" "$credential_key"
     }
@@ -173,7 +174,7 @@ function _set_aws_s3_credentials {
 
 # Function to get AWS credentials from VCAP_SERVICES
 function set_aws_s3_credentials {
-    s3_service_name=$1
+    local s3_service_name=$1
 
     _set_aws_s3_credentials "$s3_service_name" "s3"
 
@@ -190,11 +191,11 @@ function set_aws_s3_credentials {
 }
 
 function validate_s3_service_binding {
-    target_service_name="$1"
-    primary_service_name="${2:-}"
+    local target_service_name="$1"
+    local primary_service_name="${2:-}"
 
     # Locate the correct service by name
-    service_index=$(echo "$VCAP_SERVICES" | jq --arg name "$target_service_name" '.s3 | map(.name == $name) | index(true)')
+    local service_index; service_index=$(echo "$VCAP_SERVICES" | jq --arg name "$target_service_name" '.s3 | map(.name == $name) | index(true)')
 
     if [ "$service_index" == "null" ]; then
         echo "Could not find expected S3 service: $target_service_name"
@@ -205,8 +206,13 @@ function validate_s3_service_binding {
     if [ -n "$primary_service_name" ]; then
         validate_s3_service_binding "$primary_service_name"
 
-        bucket_id=$(get_bucket_id "$target_service_name")
-        additional_buckets_index=$(echo "$VCAP_SERVICES" | jq --arg id "$bucket_id" --arg primary "$primary_service_name" '.s3[] | select(.name == $primary) | .credentials.additional_buckets | index($id)')
+        local bucket_id; bucket_id=$(get_bucket_id "$target_service_name")
+        local additional_buckets_index; additional_buckets_index=$( \
+                echo "$VCAP_SERVICES" \
+                | jq \
+                --arg id "$bucket_id" --arg primary "$primary_service_name" \
+                '.s3[] | select(.name == $primary) | .credentials.additional_buckets | index($id)' \
+            )
 
         if [ "$additional_buckets_index" == "null" ]; then
             echo "Target S3 service $target_service_name is not listed as an additional bucket in the primary S3 service $primary_service_name"
