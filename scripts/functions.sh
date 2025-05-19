@@ -1,6 +1,59 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+function aws_s3_generate_metadata {
+    path="$1"
+
+    metadata_file="/tmp/metadata.json"
+
+    # Generate metadata file and stage it in /tmp
+    aws_global_flags=('--output' 'text' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    # If DEBUG is set to true or 1, enable debug logging
+    if [[ "$DEBUG" == "true" || "$DEBUG" == 1 ]]; then
+        aws_global_flags+=('--debug')
+    fi
+
+    aws "${aws_global_flags[@]}" \
+        s3 ls \
+        "$path" \
+        --recursive \
+        | awk '{$1=$1; print}' \
+        | while read -r date time size key; do echo "{\"timestamp\": \"${date} ${time}\", \"size\": ${size}, \"key\": \"${key}\"}"; done \
+        | jq -s '.' > "$metadata_file"
+
+    if [[ "$DEBUG" != "true" && "$DEBUG" != 1 ]]; then
+        # If DEBUG is not set to true or 1, use --quiet to suppress output
+        aws_global_flags+=('--quiet')
+    fi
+
+    # Upload the metadata file to S3
+    aws "${aws_global_flags[@]}" \
+        s3 cp \
+        "$metadata_file" \
+        "${path}/metadata.json"
+}
+
+function aws_s3_sync {
+    source_uri="$1"
+    destination_uri="$2"
+
+    aws_global_flags=('--output' 'json' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    s3_flags=('--exact-timestamps' '--delete')
+    # If DEBUG is set to true or 1, enable debug logging
+    if [[ "$DEBUG" == "true" || "$DEBUG" == 1 ]]; then
+        aws_global_flags+=('--debug')
+    else
+        # Otherwise, use --quiet to suppress output
+        aws_global_flags+=('--quiet')
+    fi
+
+    aws "${aws_global_flags[@]}" \
+        s3 sync \
+        "$source_uri" \
+        "$destination_uri" \
+        "${s3_flags[@]}"
+}
+
 function get_bucket_id {
     echo "$VCAP_SERVICES" | jq -r --arg name "$1" '.s3[] | select(.name == $name) | .credentials.bucket'
 }
@@ -10,7 +63,7 @@ function _set_aws_s3_credentials {
     s3_service_name=$1
     service_type=$2
 
-    echo "Checking for $service_type $s3_service_name"
+    echo "Setting credentials for $service_type service \"${s3_service_name}\""
 
     _get_credential() {
         credential_key="$1"
@@ -44,44 +97,28 @@ function set_aws_s3_credentials {
     echo "Set credentials for S3"
 }
 
-function validate_backup_s3_service_binding {
-    # CF_S3_CONFIG should look like:
-    # {
-    #   "backup": "my-backup-bucket",
-    #   "targets": ["logs-bucket", "archive-bucket"]
-    # }
-
-    # Parse expected value
-    expected_backup_name=$(echo "$CF_S3_CONFIG" | jq -r '.backup')
-
-    # Locate the correct backup service by name
-    backup_index=$(echo "$VCAP_SERVICES" | jq --arg name "$expected_backup_name" '.s3 | map(.name == $name) | index(true)')
-
-    if [ "$backup_index" == "null" ]; then
-        echo "Could not find expected backup S3 service: $expected_backup_name"
-        exit 1
-    fi
-}
-
-function validate_target_s3_service_binding {
-    validate_backup_s3_service_binding
-
+function validate_s3_service_binding {
     target_service_name="$1"
-    backup_service_name="$2"
+    primary_service_name="${2:-}"
 
-    target_index=$(echo "$VCAP_SERVICES" | jq --arg name "$target_service_name" '.s3 | map(.name == $name) | index(true)')
+    # Locate the correct service by name
+    service_index=$(echo "$VCAP_SERVICES" | jq --arg name "$target_service_name" '.s3 | map(.name == $name) | index(true)')
 
-    if [ "$target_index" == "null" ]; then
-        echo "Could not find expected target S3 service: $target_service_name"
+    if [ "$service_index" == "null" ]; then
+        echo "Could not find expected S3 service: $target_service_name"
         exit 1
     fi
 
-    bucket_id=$(get_bucket_id "$target_service_name")
-    echo "$bucket_id"
-    additional_buckets_index=$(echo "$VCAP_SERVICES" | jq --arg id "$bucket_id" --arg backup "$backup_service_name" '.s3[] | select(.name == $backup) | .credentials.additional_buckets | index($id)')
+    # If a primary service name is provided, check if the target service is listed as an additional bucket
+    if [ -n "$primary_service_name" ]; then
+        validate_s3_service_binding "$primary_service_name"
 
-    if [ "$additional_buckets_index" == "null" ]; then
-        echo "Target S3 service $target_service_name is not listed as an additional bucket in the backup S3 service $backup_service_name"
-        exit 1
+        bucket_id=$(get_bucket_id "$target_service_name")
+        additional_buckets_index=$(echo "$VCAP_SERVICES" | jq --arg id "$bucket_id" --arg primary "$primary_service_name" '.s3[] | select(.name == $primary) | .credentials.additional_buckets | index($id)')
+
+        if [ "$additional_buckets_index" == "null" ]; then
+            echo "Target S3 service $target_service_name is not listed as an additional bucket in the primary S3 service $primary_service_name"
+            exit 1
+        fi
     fi
 }

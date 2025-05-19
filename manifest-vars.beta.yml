@@ -1,3 +1,3 @@
 # FILE NEEDED FOR CI/CD TO WORK
-cfS3Config: '{"backup": "backups", "targets": ["test"]}'
-
+cfS3BackupServiceName: backups
+cfS3TargetServiceNames: test

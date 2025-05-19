@@ -43,4 +43,3 @@ then
     echo "Removing installation files"
     rm -rf awscliv2.zip aws
 fi
-

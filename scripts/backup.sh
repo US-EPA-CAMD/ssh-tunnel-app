@@ -1,10 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPTS_DIR="$(dirname "${BASH_SOURCE[0]}")"
+# Help section
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || $# -lt 1 ]]; then
+    echo "Usage: $(basename "$0") <TARGET_SERVICE_NAME>"
+    echo
+    echo "Back up an S3 bucket to the backup S3 service."
+    echo
+    echo "Arguments:"
+    echo "  TARGET_SERVICE_NAME   Name of the bound S3 service to back up."
+    echo
+    echo "Environment Variables:"
+    echo "  CF_S3_BACKUP_SERVICE_NAME   Name of the bound S3 backup service."
+    echo
+    echo "Example:"
+    echo "  $(basename "$0") example-bucket"
+    exit 0
+fi
 
 TARGET_SERVICE_NAME="$1"
-BACKUP_SERVICE_NAME="$2"
+
+BACKUP_SERVICE_NAME="$CF_S3_BACKUP_SERVICE_NAME"
+DEBUG="${DEBUG:-false}"
+SCRIPTS_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 # Check if the functions.sh file exists
 if [ ! -f "${SCRIPTS_DIR}/functions.sh" ]; then
@@ -13,11 +31,17 @@ if [ ! -f "${SCRIPTS_DIR}/functions.sh" ]; then
 fi
 source "${SCRIPTS_DIR}/functions.sh"
 
-validate_target_s3_service_binding "$TARGET_SERVICE_NAME" "$BACKUP_SERVICE_NAME"
+validate_s3_service_binding "$TARGET_SERVICE_NAME" "$BACKUP_SERVICE_NAME"
 set_aws_s3_credentials "$BACKUP_SERVICE_NAME"
 
 BACKUP_BUCKET_ID=$(get_bucket_id "$BACKUP_SERVICE_NAME")
+BACKUP_DATE=$(date '+%Y-%m-%d')
+BACKUP_PREFIX="${TARGET_SERVICE_NAME}/${BACKUP_DATE}"
 TARGET_BUCKET_ID=$(get_bucket_id "$TARGET_SERVICE_NAME")
 
-aws s3 sync --exact-timestamps "s3://${TARGET_BUCKET_ID}" "s3://${BACKUP_BUCKET_ID}/${TARGET_SERVICE_NAME}/$(date '+%Y-%m-%d')"
+echo "Backing up bucket \"${TARGET_SERVICE_NAME}\" to bucket \"${BACKUP_SERVICE_NAME}\"..."
 
+aws_s3_sync "s3://${TARGET_BUCKET_ID}" "s3://${BACKUP_BUCKET_ID}/${BACKUP_PREFIX}" # Copy the contents of the target bucket to the backup bucket
+aws_s3_generate_metadata "s3://${BACKUP_BUCKET_ID}/${BACKUP_PREFIX}" # Generate metadata for the backup
+
+echo "Backup and metadata written to s3://${BACKUP_BUCKET_ID}/${BACKUP_PREFIX}/"
