@@ -122,6 +122,7 @@ function cf_auth {
 
     CF_USERNAME=$(_get_credential 'username'); export CF_USERNAME
     CF_PASSWORD=$(_get_credential 'password'); export CF_PASSWORD
+
     echo ""
     cf auth # Reads CF_USERNAME & CF_PASSWORD from the environment
 
