@@ -105,19 +105,51 @@ function aws_s3_sync {
 }
 
 function cf_auth {
-    echo "Initiating cloud.gov login... "
-    cf api "$CF_API_URL"
+    _get_metadatum() {
+        key="$1"
 
+        jq -r --arg key "$key" '.[$key]' <<< "${VCAP_APPLICATION}"
+    }
+
+    _get_credential() {
+        credential_key="$1"
+
+        get_credential 'cloud-gov-service-account' "$CF_SERVICE_ACCOUNT_NAME" "$credential_key"
+    }
+
+    echo "Initiating cloud.gov login... "
+    cf api "$(_get_metadatum 'cf_api')"
+
+    CF_USERNAME=$(_get_credential 'username'); export CF_USERNAME
+    CF_PASSWORD=$(_get_credential 'password'); export CF_PASSWORD
     echo ""
     cf auth # Reads CF_USERNAME & CF_PASSWORD from the environment
 
     echo ""
     echo "Setting cloud.gov target organization and space... "
-    cf target -o "$CF_ORG_NAME" -s "$CF_ORG_SPACE"
+    cf target -o "$(_get_metadatum 'organization_name')" -s "$(_get_metadatum 'space_name')"
+}
+
+function get_app_name {
+    echo "$VCAP_APPLICATION" | jq -r '.application_name'
 }
 
 function get_bucket_id {
-    echo "$VCAP_SERVICES" | jq -r --arg name "$1" '.s3[] | select(.name == $name) | .credentials.bucket'
+    service_name="$1"
+
+    echo "$VCAP_SERVICES" | jq -r --arg name "$service_name" '.s3[] | select(.name == $name) | .credentials.bucket'
+}
+
+function get_credential {
+    service_type="$1"
+    service_name="$2"
+    credential_key="$3"
+
+    jq -r --arg service_type "$service_type" \
+        --arg credential_key "$credential_key" \
+        --arg service_name "$service_name" \
+        '.[$service_type]?[] | select(.name == $service_name) | .credentials[$credential_key]' \
+        <<< "${VCAP_SERVICES}"
 }
 
 # Function to get AWS S3 credentials from VCAP_SERVICES
@@ -129,11 +161,8 @@ function _set_aws_s3_credentials {
 
     _get_credential() {
         credential_key="$1"
-        jq -r --arg service_type "$service_type" \
-            --arg credential_key "$credential_key" \
-            --arg s3_service_name "$s3_service_name" \
-            '.[$service_type]?[] | select(.name == $s3_service_name) | .credentials[$credential_key]' \
-            <<< "${VCAP_SERVICES}"
+
+        get_credential "$service_type" "$s3_service_name" "$credential_key"
     }
 
     AWS_ACCESS_KEY_ID=$(_get_credential 'access_key_id'); export AWS_ACCESS_KEY_ID

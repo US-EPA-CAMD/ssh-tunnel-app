@@ -33,6 +33,6 @@ done
 
 # Generate the crontab file
 echo "${S3_BACKUP_TASK_CRON_EXPRESSION:-'0 0 * * *'} ${SCRIPTS_DIR}/backup-buckets.sh" > "${SCRIPTS_DIR}/../crontab"
-echo "${S3_BACKUP_TASK_CRON_EXPRESSION:-'0 0 * * *'} ${SCRIPTS_DIR}/prune-buckets.sh" >> "${SCRIPTS_DIR}/../crontab"
+echo "${S3_PRUNE_TASK_CRON_EXPRESSION:-'0 0 * * *'} ${SCRIPTS_DIR}/prune-buckets.sh" >> "${SCRIPTS_DIR}/../crontab"
 
 supercronic "${SCRIPTS_DIR}/../crontab"

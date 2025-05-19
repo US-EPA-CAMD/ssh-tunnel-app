@@ -7,12 +7,13 @@ applications:
       - https://github.com/cloudfoundry/apt-buildpack
       - staticfile_buildpack
     env:
-      CF_APP_NAME: ssh-tunnel
-      CF_S3_BACKUPS_SERVICE_NAME: ((cfS3BackupsServiceName))
-      CF_S3_BACKUP_TARGET_SERVICE_NAMES: ((cfS3BackupTargetServiceNames))
+      CF_S3_BACKUPS_SERVICE_NAME: backups
+      CF_S3_BACKUP_TARGET_SERVICE_NAMES: mats-bulk-files-import
+      CF_SERVICE_ACCOUNT_NAME: deployment-svc
     no-route: true
     services:
       - camd-pg-db
       #- backups # Must bind manually to specify `additional_buckets`
+      - deployment-svc
       - mats-bulk-files-import
     command: ./scripts/supercronic.sh 2>&1

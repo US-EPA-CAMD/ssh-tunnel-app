@@ -11,6 +11,8 @@
 
 SSH tunnel application for cloud.gov database connections. Dummy application bound to database services that provide a dedicated connection to the EASEY Database. The application leverages the [apt-buildpack](https://github.com/cloudfoundry/apt-buildpack) to incorporate PostgreSQL client tools within the app’s container. **Note that the apt-buildpack is considered experimental and is not supported by Cloud.gov. Using this in a production setting would require you to address the security controls.** This setup enables the execution of [Cloud Foundry Tasks](https://docs.cloudfoundry.org/devguide/using-tasks.html), allowing for the implementation of various PostgreSQL commands such as `pg_dump`, `pg_restore`, and `psql`. Importantly, each `aws-rds` service instance bound to the application manages its credentials automatically, eliminating the need to manually enter passwords when executing commands.
 
+In addition to database tunneling and task execution, this app supports automated backups to S3 using the [Supercronic](https://github.com/aptible/supercronic) scheduler. When configured with the appropriate environment variables, the app can periodically back up and prune data from all target S3 buckets. Backup and restore operations can also be performed manually using the included `backup-bucket.sh` and `restore-bucket.sh` scripts.
+
 ## Getting Started
 
 Follow these [instructions](https://github.com/US-EPA-CAMD/devops/blob/master/GETTING-STARTED.md) to get the project up and running correctly.
@@ -63,6 +65,64 @@ Retrieving logs for app ssh-tunnel in org my-org / space my-space as
 2020-03-22T21:07:56.00-0400 [APP/TASK/bfa9cef9/0] OUT 2020-03-23 01:07:56,000 INFO: PostgreSQL 15.7 (Ubuntu 14.13-0ubuntu0.22.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0, 64-bit
 ...
 ```
+
+## Automated S3 Backup and Pruning
+
+This app can be used to schedule automated daily S3 backups of Cloud Foundry-bound buckets and prune older backups after a configurable retention period.
+
+### Configuration
+
+- Set the environment variable `CF_S3_BACKUPS_SERVICE_NAME` to the name of the S3 bucket to use for backups.
+- Set the environment variable `CF_S3_BACKUP_TARGET_SERVICE_NAMES` to a comma-separated list of service names to back up.
+- Each target S3 service must be bound to the app.
+- The backup S3 bucket must also be bound to the app using `additional_instances` for all listed target buckets, e.g.:
+  ```bash
+  cf bind-service ssh-tunnel backups -c '{"additional_instances": ["mats-bulk-files-import"]}'
+  ```
+
+Each backup is stored in the format:
+`s3://<backup-bucket>/<target-service-name>/<YYYY-MM-DD>/...`
+
+A `metadata.json` file listing the backed-up keys and timestamp is written into each day's backup folder.
+
+### Scheduling
+
+[Supercronic](https://github.com/aptible/supercronic) is used to run backups and pruning automatically based on the schedules defined in the `S3_BACKUP_TASK_CRON_EXPRESSION` & `S3_PRUNE_TASK_CRON_EXPRESSION` environment variables, respectively (default: daily at midnight). A typical schedule might look like this:
+
+```bash
+0 0 * * * /home/vcap/app/scripts/backup-all.sh
+```
+
+This will run the backup daily at midnight.
+
+### Pruning
+
+The script retains at least one backup per service and deletes older backups based on the `CF_S3_BACKUP_RETENTION_DAYS` environment variable (default: 30).
+
+## Manual S3 Backup and Restore
+
+You can also manually invoke S3 backup or restore operations using the provided scripts:
+
+- **Backup a single bucket:**
+
+  ```bash
+  cf run-task ssh-tunnel --command './scripts/backup-bucket.sh <target-service-name>'
+  ```
+
+- **Prune a single bucket:**
+
+  ```bash
+  cf run-task ssh-tunnel --command './scripts/prune-bucket.sh <target-service-name>'
+  ```
+
+- **Restore from backup:**
+
+  ```bash
+  cf run-task ssh-tunnel --command './scripts/restore-bucket.sh <target-service-name> <backup-date>'
+  ```
+
+> [!note]
+> Note: These scripts assume that S3 credentials are set via bound Cloud Foundry service instances.
 
 ## PostgreSQL client tools
 

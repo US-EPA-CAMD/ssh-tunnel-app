@@ -21,7 +21,7 @@ validate_s3_service_binding "$CF_S3_BACKUPS_SERVICE_NAME" # Ensure the backup bu
 
 IFS=',' read -ra TARGET_SERVICES <<< "$CF_S3_BACKUP_TARGET_SERVICE_NAMES" # Comma-separated list of target services
 for target_service in "${TARGET_SERVICES[@]}"; do
-    #cf run-task "$CF_APP_NAME" --name "prune-$target_service" --command "${SCRIPTS_DIR}/prune-bucket.sh $target_service" # TODO: Uncomment when done testing locally
+    #cf run-task "$(get_app_name)" --name "prune-$target_service" --command "${SCRIPTS_DIR}/prune-bucket.sh $target_service" # TODO: Uncomment when done testing locally
 
     "${SCRIPTS_DIR}/prune-bucket.sh" "$target_service"
 done
