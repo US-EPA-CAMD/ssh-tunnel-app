@@ -18,12 +18,21 @@ then
 fi
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # Absolute path to this script's directory
-# Check if the backup-all.sh file exists
-if [ ! -f "${SCRIPTS_DIR}/backup-all.sh" ]; then
-    echo "backup-all.sh file not found"
-    exit 2
-fi
 
-echo "${S3_BACKUP_TASK_CRON_EXPRESSION:-'0 0 * * *'} ${SCRIPTS_DIR}/backup-all.sh" > "${SCRIPTS_DIR}/../crontab"
+# Check if the required files exist
+REQUIRED_FILES=(
+    "${SCRIPTS_DIR}/backup-buckets.sh"
+    "${SCRIPTS_DIR}/prune-buckets.sh"
+)
+for file in "${REQUIRED_FILES[@]}"; do
+    if [ ! -f "$file" ]; then
+        echo "Required file $file not found"
+        exit 2
+    fi
+done
+
+# Generate the crontab file
+echo "${S3_BACKUP_TASK_CRON_EXPRESSION:-'0 0 * * *'} ${SCRIPTS_DIR}/backup-buckets.sh" > "${SCRIPTS_DIR}/../crontab"
+echo "${S3_BACKUP_TASK_CRON_EXPRESSION:-'0 0 * * *'} ${SCRIPTS_DIR}/prune-buckets.sh" >> "${SCRIPTS_DIR}/../crontab"
 
 supercronic "${SCRIPTS_DIR}/../crontab"

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+DEBUG="${DEBUG:-false}" # Set to true or 1 to enable debug logging
+
 function aws_s3_generate_metadata {
-    path="$1"
+    uri="$1"
 
     metadata_file="/tmp/metadata.json"
 
@@ -15,7 +17,7 @@ function aws_s3_generate_metadata {
 
     aws "${aws_global_flags[@]}" \
         s3 ls \
-        "$path" \
+        "$uri" \
         --recursive \
         | awk '{$1=$1; print}' \
         | while read -r date time size key; do echo "{\"timestamp\": \"${date} ${time}\", \"size\": ${size}, \"key\": \"${key}\"}"; done \
@@ -30,7 +32,55 @@ function aws_s3_generate_metadata {
     aws "${aws_global_flags[@]}" \
         s3 cp \
         "$metadata_file" \
-        "${path}/metadata.json"
+        "${uri}/metadata.json"
+}
+
+function aws_s3_prune {
+    uri="$1"
+    cutoff_date="$2"
+
+    service_name="$(basename "$uri")"
+
+    aws_global_flags=('--output' 'text' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    # If DEBUG is set to true or 1, enable debug logging
+    if [[ "$DEBUG" == "true" || "$DEBUG" == 1 ]]; then
+        aws_global_flags+=('--debug')
+    fi
+
+    # Get a sorted list of backup directories (dates), oldest to newest
+    backup_dirs=()
+    while read -r dir; do
+        backup_dirs+=("${dir%/}")  # Remove trailing slash
+        done < <( \
+            aws "${aws_global_flags[@]}" \
+            s3 ls \
+            "${uri}/" \
+            | awk '/PRE/ {print $2}' \
+            | sort \
+        )
+
+    if [[ "$DEBUG" != "true" && "$DEBUG" != 1 ]]; then
+        # If DEBUG is not set to true or 1, use --quiet to suppress output
+        aws_global_flags+=('--quiet')
+    fi
+
+    s3_flags=('--recursive' '--dryrun') # TODO: Remove --dryrun to actually delete
+    total_backups="${#backup_dirs[@]}"
+    for ((i = 0; i < total_backups; i++)); do
+        backup_date="${backup_dirs[$i]}"
+        if [[ "$backup_date" < "$cutoff_date" ]]; then
+            # Only delete if there's at least one newer backup
+            if (( i < total_backups - 1 )); then
+                echo "Deleting old backup: ${service_name}/${backup_date}"
+                aws "${aws_global_flags[@]}" \
+                    s3 rm \
+                    "${uri}/${backup_date}" \
+                    "${s3_flags[@]}"
+            else
+                echo "Skipping deletion of last remaining backup: ${service_name}/${backup_date}"
+            fi
+        fi
+    done
 }
 
 function aws_s3_sync {
@@ -52,6 +102,18 @@ function aws_s3_sync {
         "$source_uri" \
         "$destination_uri" \
         "${s3_flags[@]}"
+}
+
+function cf_auth {
+    echo "Initiating cloud.gov login... "
+    cf api "$CF_API_URL"
+
+    echo ""
+    cf auth # Reads CF_USERNAME & CF_PASSWORD from the environment
+
+    echo ""
+    echo "Setting cloud.gov target organization and space... "
+    cf target -o "$CF_ORG_NAME" -s "$CF_ORG_SPACE"
 }
 
 function get_bucket_id {

@@ -8,8 +8,8 @@ applications:
       - staticfile_buildpack
     env:
       CF_APP_NAME: ssh-tunnel
-      CF_S3_BACKUP_SERVICE_NAME: ((cfS3BackupServiceName))
-      CF_S3_TARGET_SERVICE_NAMES: ((cfS3TargetServiceNames))
+      CF_S3_BACKUPS_SERVICE_NAME: ((cfS3BackupsServiceName))
+      CF_S3_BACKUP_TARGET_SERVICE_NAMES: ((cfS3BackupTargetServiceNames))
     no-route: true
     services:
       - camd-pg-db

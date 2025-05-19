@@ -11,7 +11,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || $# -lt 1 ]]; then
     echo "  TARGET_SERVICE_NAME   Name of the bound S3 service to back up."
     echo
     echo "Environment Variables:"
-    echo "  CF_S3_BACKUP_SERVICE_NAME   Name of the bound S3 backup service."
+    echo "  CF_S3_BACKUPS_SERVICE_NAME   Name of the bound S3 backup service."
     echo
     echo "Example:"
     echo "  $(basename "$0") example-bucket"
@@ -20,8 +20,7 @@ fi
 
 TARGET_SERVICE_NAME="$1"
 
-BACKUP_SERVICE_NAME="$CF_S3_BACKUP_SERVICE_NAME"
-DEBUG="${DEBUG:-false}"
+BACKUP_SERVICE_NAME="$CF_S3_BACKUPS_SERVICE_NAME"
 SCRIPTS_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 # Check if the functions.sh file exists

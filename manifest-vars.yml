@@ -6,5 +6,5 @@ port: 8080
 memory: 64
 disk: 1024
 instances: 1
-cfS3BackupServiceName: backups
-cfS3TargetServiceNames: test
+cfS3BackupsServiceName: backups
+cfS3BackupTargetServiceNames: test
