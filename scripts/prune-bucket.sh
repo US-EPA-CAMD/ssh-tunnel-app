@@ -4,8 +4,7 @@ set -euo pipefail
 resolve_script_path() {
     local source="${BASH_SOURCE[0]}"
     while [ -h "$source" ]; do
-        local directory
-        directory="$(cd -P "$(dirname "$source")" >/dev/null 2>&1 && pwd)"
+        local directory; directory="$(cd -P "$(dirname "$source")" >/dev/null 2>&1 && pwd)"
         source="$(readlink "$source")"
         [[ "$source" != /* ]] && source="$directory/$source"
     done
