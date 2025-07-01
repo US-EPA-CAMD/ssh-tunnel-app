@@ -7,11 +7,13 @@ package-lock.json
 
 # production
 /dist
+crontab
 
 # misc
 .DS_Store
 .env
 .env.*
+.envrc
 
 npm-debug.log*
 

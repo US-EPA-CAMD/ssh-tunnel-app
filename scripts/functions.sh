@@ -1,0 +1,222 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DEBUG="${DEBUG:-false}" # Set to true or 1 to enable debug logging
+
+function aws_s3_generate_metadata {
+    local uri="$1"
+
+    # Generate metadata file and stage it in /tmp
+    local aws_global_flags=('--output' 'text' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    local metadata_file="/tmp/metadata.json"
+
+    # If DEBUG is set to true or 1, enable debug logging
+    if [[ "$DEBUG" == "true" || "$DEBUG" == 1 ]]; then
+        aws_global_flags+=('--debug')
+    fi
+
+    aws "${aws_global_flags[@]}" \
+        s3 ls \
+        "$uri" \
+        --recursive \
+        | awk '{$1=$1; print}' \
+        | while read -r date time size key; do echo "{\"timestamp\": \"${date} ${time}\", \"size\": ${size}, \"key\": \"${key}\"}"; done \
+        | jq -s '.' > "$metadata_file"
+
+    if [[ "$DEBUG" != "true" && "$DEBUG" != 1 ]]; then
+        # If DEBUG is not set to true or 1, use --quiet to suppress output
+        aws_global_flags+=('--quiet')
+    fi
+
+    # Upload the metadata file to S3
+    aws "${aws_global_flags[@]}" \
+        s3 cp \
+        "$metadata_file" \
+        "${uri}/metadata.json"
+}
+
+function aws_s3_prune {
+    local uri="$1"
+    local cutoff_date="$2"
+
+    local aws_global_flags=('--output' 'text' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    local service_name; service_name="$(basename "$uri")"
+
+    # If DEBUG is set to true or 1, enable debug logging
+    if [[ "$DEBUG" == "true" || "$DEBUG" == 1 ]]; then
+        aws_global_flags+=('--debug')
+    fi
+
+    # Get a sorted list of backup directories (dates), oldest to newest
+    local backup_dirs=()
+    while read -r dir; do
+        backup_dirs+=("${dir%/}")  # Remove trailing slash
+        done < <( \
+            aws "${aws_global_flags[@]}" \
+            s3 ls \
+            "${uri}/" \
+            | awk '/PRE/ {print $2}' \
+            | sort \
+        )
+
+    if [[ "$DEBUG" != "true" && "$DEBUG" != 1 ]]; then
+        # If DEBUG is not set to true or 1, use --quiet to suppress output
+        aws_global_flags+=('--quiet')
+    fi
+
+    local s3_flags=('--recursive')
+    local total_backups="${#backup_dirs[@]}"
+    for ((i = 0; i < total_backups; i++)); do
+        backup_date="${backup_dirs[$i]}"
+        if [[ "$backup_date" < "$cutoff_date" ]]; then
+            # Only delete if there's at least one newer backup
+            if (( i < total_backups - 1 )); then
+                echo "Deleting old backup: ${service_name}/${backup_date}"
+                aws "${aws_global_flags[@]}" \
+                    s3 rm \
+                    "${uri}/${backup_date}" \
+                    "${s3_flags[@]}"
+            else
+                echo "Skipping deletion of last remaining backup: ${service_name}/${backup_date}"
+            fi
+        fi
+    done
+}
+
+function aws_s3_sync {
+    local source_uri="$1"
+    local destination_uri="$2"
+
+    local aws_global_flags=('--output' 'json' '--color' 'off' '--no-cli-pager' '--no-cli-auto-prompt')
+    local s3_flags=('--exact-timestamps' '--delete')
+
+    # If DEBUG is set to true or 1, enable debug logging
+    if [[ "$DEBUG" == "true" || "$DEBUG" == 1 ]]; then
+        aws_global_flags+=('--debug')
+    else
+        # Otherwise, use --quiet to suppress output
+        aws_global_flags+=('--quiet')
+    fi
+
+    aws "${aws_global_flags[@]}" \
+        s3 sync \
+        "$source_uri" \
+        "$destination_uri" \
+        "${s3_flags[@]}"
+}
+
+function cf_auth {
+    _get_metadatum() {
+        local key="$1"
+
+        jq -r --arg key "$key" '.[$key]' <<< "${VCAP_APPLICATION}"
+    }
+
+    _get_credential() {
+        local credential_key="$1"
+
+        get_credential 'cloud-gov-service-account' "$CF_SERVICE_ACCOUNT_NAME" "$credential_key"
+    }
+
+    echo "Initiating cloud.gov login... "
+    cf api "$(_get_metadatum 'cf_api')"
+
+    CF_USERNAME=$(_get_credential 'username'); export CF_USERNAME
+    CF_PASSWORD=$(_get_credential 'password'); export CF_PASSWORD
+
+    echo ""
+    cf auth # Reads CF_USERNAME & CF_PASSWORD from the environment
+
+    echo ""
+    echo "Setting cloud.gov target organization and space... "
+    cf target -o "$(_get_metadatum 'organization_name')" -s "$(_get_metadatum 'space_name')"
+}
+
+function get_app_name {
+    echo "$VCAP_APPLICATION" | jq -r '.application_name'
+}
+
+function get_bucket_id {
+    local service_name="$1"
+
+    echo "$VCAP_SERVICES" | jq -r --arg name "$service_name" '.s3[] | select(.name == $name) | .credentials.bucket'
+}
+
+function get_credential {
+    local service_type="$1"
+    local service_name="$2"
+    local credential_key="$3"
+
+    jq -r --arg service_type "$service_type" \
+        --arg credential_key "$credential_key" \
+        --arg service_name "$service_name" \
+        '.[$service_type]?[] | select(.name == $service_name) | .credentials[$credential_key]' \
+        <<< "${VCAP_SERVICES}"
+}
+
+# Function to get AWS S3 credentials from VCAP_SERVICES
+function _set_aws_s3_credentials {
+    local s3_service_name=$1
+    local service_type=$2
+
+    echo "Setting credentials for $service_type service \"${s3_service_name}\""
+
+    _get_credential() {
+        local credential_key="$1"
+
+        get_credential "$service_type" "$s3_service_name" "$credential_key"
+    }
+
+    AWS_ACCESS_KEY_ID=$(_get_credential 'access_key_id'); export AWS_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY=$(_get_credential 'secret_access_key'); export AWS_SECRET_ACCESS_KEY
+    AWS_DEFAULT_REGION=$(_get_credential 'region'); export AWS_DEFAULT_REGION
+}
+
+# Function to get AWS credentials from VCAP_SERVICES
+function set_aws_s3_credentials {
+    local s3_service_name=$1
+
+    _set_aws_s3_credentials "$s3_service_name" "s3"
+
+    if [ -z "${AWS_ACCESS_KEY_ID:-}" ]; then
+        _set_aws_s3_credentials "s3_service_name" "user-provided"
+    fi
+
+    # Check if credentials were properly set
+    : "${AWS_ACCESS_KEY_ID:?AWS S3 not configured}"
+    : "${AWS_SECRET_ACCESS_KEY:?AWS S3 not configured}"
+    : "${AWS_DEFAULT_REGION:?AWS S3 not configured}"
+
+    echo "Set credentials for S3"
+}
+
+function validate_s3_service_binding {
+    local target_service_name="$1"
+    local primary_service_name="${2:-}"
+
+    # Locate the correct service by name
+    local service_index; service_index=$(echo "$VCAP_SERVICES" | jq --arg name "$target_service_name" '.s3 | map(.name == $name) | index(true)')
+
+    if [ "$service_index" == "null" ]; then
+        echo "Could not find expected S3 service: $target_service_name"
+        exit 1
+    fi
+
+    # If a primary service name is provided, check if the target service is listed as an additional bucket
+    if [ -n "$primary_service_name" ]; then
+        validate_s3_service_binding "$primary_service_name"
+
+        local bucket_id; bucket_id=$(get_bucket_id "$target_service_name")
+        local additional_buckets_index; additional_buckets_index=$( \
+                echo "$VCAP_SERVICES" \
+                | jq \
+                --arg id "$bucket_id" --arg primary "$primary_service_name" \
+                '.s3[] | select(.name == $primary) | .credentials.additional_buckets | index($id)' \
+            )
+
+        if [ "$additional_buckets_index" == "null" ]; then
+            echo "Target S3 service $target_service_name is not listed as an additional bucket in the primary S3 service $primary_service_name"
+            exit 1
+        fi
+    fi
+}
