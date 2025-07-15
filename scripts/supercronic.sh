@@ -2,8 +2,10 @@
 set -euo pipefail
 
 DEBUG="${DEBUG:-false}" # Set to true or 1 to enable debug logging
-BIN_DIR="${BIN_DIR:-/usr/local/bin}"
 
+# Add the custom bin directory to PATH
+BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
+mkdir -p "${BIN_DIR}" # Create the bin directory if it doesn't exist
 export PATH="${BIN_DIR}:${PATH}"
 
 # Latest releases available at https://github.com/aptible/supercronic/releases

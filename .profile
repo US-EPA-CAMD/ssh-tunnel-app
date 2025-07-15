@@ -24,6 +24,11 @@ if [ "$(jq -r 'has("aws-rds")' <<< "$VCAP_SERVICES")" == "true" ]; then
     chmod 600 "${HOME}/.pgpass"
 fi
 
+# Add the custom bin directory to PATH
+BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
+mkdir -p "${BIN_DIR}" # Create the bin directory if it doesn't exist
+export PATH="${BIN_DIR}:${PATH}"
+
 # Check if aws cli is installed and install if not found
 if ! command -v aws &> /dev/null
 then
@@ -37,18 +42,14 @@ then
 
     # Install the aws cli and redirect the output to /dev/null
     echo "Running the aws cli installer"
-    ./aws/install --install-dir ~/aws-cli --bin-dir ~/bin > /dev/null
+    ./aws/install --install-dir ~/aws-cli --bin-dir "$BIN_DIR" > /dev/null
 
     # Remove installation files
     echo "Removing installation files"
     rm -rf awscliv2.zip aws
 fi
 
-# Add the custom bin directory to PATH
-BIN_DIR="${BIN_DIR:-/usr/local/bin}"
-SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/scripts" && pwd)" # Absolute path to the scripts directory
-
-export PATH="${BIN_DIR}:${PATH}"
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/public/scripts" && pwd)" # Absolute path to the scripts directory
 
 # Create symlinks for the standalone backup scripts to facilitate running them as tasks
 BACKUP_SCRIPTS=(

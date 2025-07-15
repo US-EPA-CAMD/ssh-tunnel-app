@@ -19,4 +19,5 @@ applications:
       #- backups # Must bind manually to specify `additional_buckets`
       - deployment-svc
       - mats-bulk-files-import
-    command: ./scripts/supercronic.sh 2>&1
+    command: ./public/scripts/supercronic.sh 2>&1
+    health-check-type: process
